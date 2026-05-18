@@ -97,14 +97,10 @@ const sampleContacts = [
   },
 ];
 
-// Clear existing data and insert sample contacts
 db.serialize(() => {
-  db.run('DELETE FROM contacts', (err) => {
-    if (err) {
-      console.error('Error clearing contacts:', err.message);
-      return;
-    }
-    console.log('Cleared existing contacts');
+  db.get('SELECT COUNT(*) as count FROM contacts', [], (err, row) => {
+    if (err) { console.error('Error checking contacts:', err.message); return; }
+    if (row.count > 0) { console.log('Contacts already exist, skipping seed.'); db.close(); return; }
 
     const stmt = db.prepare(`
       INSERT INTO contacts (
@@ -116,27 +112,11 @@ db.serialize(() => {
 
     sampleContacts.forEach((contact) => {
       stmt.run(
-        contact.id,
-        contact.name,
-        contact.description,
-        contact.avatar,
-        contact.firstName,
-        contact.lastName,
-        contact.otherNames || null,
-        contact.relation,
-        contact.phone,
-        contact.email,
-        contact.website,
-        contact.notes,
-        contact.address,
-        contact.city,
-        contact.country,
+        contact.id, contact.name, contact.description, contact.avatar,
+        contact.firstName, contact.lastName, contact.otherNames || null,
+        contact.relation, contact.phone, contact.email, contact.website,
+        contact.notes, contact.address, contact.city, contact.country,
         contact.postalCode,
-        (err) => {
-          if (err) {
-            console.error('Error inserting contact:', err.message);
-          }
-        },
       );
     });
 

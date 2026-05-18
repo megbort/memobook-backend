@@ -2,7 +2,9 @@ const fs = require('node:fs');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('node:path');
 
-const dbPath = process.env.DB_PATH || path.resolve(__dirname, 'contacts.db');
+const dbPath = (process.env.NODE_ENV === 'production' && process.env.DB_PATH)
+  ? process.env.DB_PATH
+  : path.resolve(__dirname, 'contacts.db');
 fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 
 const db = new sqlite3.Database(dbPath, (err) => {
