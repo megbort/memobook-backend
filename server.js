@@ -1,11 +1,17 @@
+const crypto = require('node:crypto');
 const express = require('express');
 const cors = require('cors');
 const db = require('./database');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+app.disable('x-powered-by');
+
+app.use(cors({
+  origin: process.env.ALLOWED_ORIGINS?.split(',') || 'http://localhost:3001',
+  credentials: true,
+}));
 app.use(express.json());
 
 /* ROUTES */
@@ -48,7 +54,7 @@ app.post('/contacts', (req, res) => {
   } = req.body;
 
   // Generate ID if not provided
-  const contactId = id || Date.now().toString();
+  const contactId = id || crypto.randomUUID();
 
   db.run(
     `INSERT INTO contacts (

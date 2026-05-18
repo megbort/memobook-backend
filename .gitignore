@@ -32,3 +32,6 @@ logs/
 # Build outputs
 dist/
 build/
+
+.claude
+claude.md
