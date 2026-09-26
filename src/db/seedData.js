@@ -1,5 +1,3 @@
-const db = require('./database');
-
 const sampleContacts = [
   {
     id: '01',
@@ -97,32 +95,32 @@ const sampleContacts = [
   },
 ];
 
-db.serialize(() => {
-  db.get('SELECT COUNT(*) as count FROM contacts', [], (err, row) => {
-    if (err) { console.error('Error checking contacts:', err.message); return; }
-    if (row.count > 0) { console.log('Contacts already exist, skipping seed.'); db.close(); return; }
+const sampleSocials = {
+  '01': [
+    { platform: 'instagram', handle: '@harold.snaps', url: 'https://instagram.com/harold.snaps' },
+    { platform: 'other', label: 'Flickr', handle: 'haroldh', url: 'https://flickr.com/people/haroldh' },
+  ],
+  '02': [
+    { platform: 'x', handle: '@bobgames', url: 'https://x.com/bobgames' },
+    { platform: 'other', label: 'Twitch', handle: 'bobsmithplays', url: 'https://twitch.tv/bobsmithplays' },
+  ],
+  '03': [{ platform: 'instagram', handle: '@charlie.wanders', url: 'https://instagram.com/charlie.wanders' }],
+  '04': [
+    { platform: 'tiktok', handle: '@dianalifts', url: 'https://tiktok.com/@dianalifts' },
+    { platform: 'linkedin', handle: 'diana-lopez', url: 'https://linkedin.com/in/diana-lopez' },
+  ],
+  '05': [{ platform: 'github', handle: 'ethanm', url: 'https://github.com/ethanm' }],
+};
 
-    const stmt = db.prepare(`
-      INSERT INTO contacts (
-        id, name, description, avatar, firstName, lastName,
-        otherNames, relation, phone, email, website, notes,
-        address, city, country, postalCode
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
+const sampleCustomFields = {
+  '01': [
+    { section: 'personal', label: 'Birthday', value: 'March 14' },
+    { section: 'personal', label: 'Favourite Coffee', value: 'Flat white' },
+  ],
+  '02': [{ section: 'personal', label: 'Discord', value: 'bob#4821' }],
+  '03': [{ section: 'address', label: 'Apartment', value: 'Unit 4B' }],
+  '04': [{ section: 'personal', label: 'Gym Schedule', value: 'Mon / Wed / Fri, 6am' }],
+  '05': [{ section: 'personal', label: 'Favourite Book', value: 'Meditations' }],
+};
 
-    sampleContacts.forEach((contact) => {
-      stmt.run(
-        contact.id, contact.name, contact.description, contact.avatar,
-        contact.firstName, contact.lastName, contact.otherNames || null,
-        contact.relation, contact.phone, contact.email, contact.website,
-        contact.notes, contact.address, contact.city, contact.country,
-        contact.postalCode,
-      );
-    });
-
-    stmt.finalize(() => {
-      console.log('Sample contacts inserted successfully!');
-      db.close();
-    });
-  });
-});
+module.exports = { sampleContacts, sampleSocials, sampleCustomFields };

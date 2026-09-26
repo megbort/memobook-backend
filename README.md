@@ -1,167 +1,249 @@
 # MemoBook Backend
 
-Simple Node.js + Express + SQLite backend for the MemoBook contact management application.
+Node.js + Express 5 + SQLite backend for MemoBook, a demo contact book. There's no auth: anyone using the demo can add and edit contacts. The mock contacts are only seeded into an empty database.
 
-## Setup
-
-The backend is already set up with all necessary dependencies installed:
-
-- Express.js (web framework)
-- SQLite3 (database)
-- CORS (for cross-origin requests)
-- Nodemon (dev dependency for auto-reloading)
-
-## Running the Backend
-
-### Development Mode (with auto-reload)
+## Run locally
 
 ```bash
-npm run dev
+npm install
+npm run dev    # seeds an empty DB, then starts nodemon on http://localhost:3000
+npm start      # same without auto-reload (used on Railway)
+npm run seed   # seed only (skips if contacts already exist)
+npm test       # run the test suite
 ```
 
-### Production Mode
+The local database is `contacts.db` (gitignored). Delete it to start fresh with the mock data.
+
+To run the full app locally, use two terminals:
+
+1. `memobook-backend`: `npm run dev`
+2. `memobook-frontend`: `npm run dev`, with `VITE_API_BASE_URL=http://localhost:3000` in the frontend `.env`
+
+Then open http://localhost:5173.
+
+CORS allows `http://localhost:3001` and `http://localhost:5173` by default. Set `ALLOWED_ORIGINS` (comma-separated) to override it, which production does.
+
+## Project structure
+
+Code is grouped by feature. Each feature folder owns its routes, service (database logic) and validation.
+
+```
+src/
+  server.js              entry point: open DB → migrate → start app
+  app.js                 createApp(db): CORS, JSON, routers, error handler
+  config.js              PORT, ALLOWED_ORIGINS, DB path
+  db/
+    connection.js        createDb(file): promise wrappers + withTransaction
+    migrations.js        versioned schema (PRAGMA user_version)
+    seed.js / seedData.js   mock contacts for an empty DB
+  lib/                   HttpError, field helpers, sortOrder
+  contacts/              contacts.routes.js, contacts.service.js, contacts.validation.js
+  socials/               socials.routes.js, socials.service.js, socials.validation.js
+  customFields/          customFields.routes.js, customFields.service.js, customFields.validation.js
+  timeline/              timeline.routes.js, timeline.service.js (logEvent, diff)
+  media/                 media.routes.js (placeholder)
+tests/                   Vitest + supertest, one file per feature (plus db/, lib/)
+```
+
+The database is passed in (`createApp(db)`, `service(db, ...)`) rather than imported, so every test gets its own in-memory SQLite database.
+
+## Testing
 
 ```bash
-npm start
+npm test               # run once
+npm run test:watch     # re-run on change
+npm run test:coverage  # with coverage report (HTML in coverage/)
 ```
 
-The server will run on `http://localhost:3000`
+Tests use [Vitest](https://vitest.dev) and [supertest](https://github.com/ladjs/supertest) against a fresh `:memory:` database per test, so they never touch `contacts.db`. Coverage must stay above 90% lines/functions/statements and 85% branches, or the run fails.
 
-## API Endpoints
+GitHub Actions (`.github/workflows/test.yml`) runs `npm run test:coverage` on every commit pushed to a pull request and on every push to `master`.
 
-### Get All Contacts
+## Data model
 
+```mermaid
+erDiagram
+    contacts ||--o{ social_links : has
+    contacts ||--o{ custom_fields : has
+    contacts ||--o{ media : has
+    contacts ||--o{ timeline_events : logs
+
+    contacts {
+        TEXT id PK
+        TEXT name "NOT NULL, derived: firstName + lastName"
+        TEXT description
+        TEXT avatar "URL"
+        TEXT firstName "required"
+        TEXT lastName
+        TEXT otherNames
+        TEXT relation
+        TEXT phone
+        TEXT email
+        TEXT website
+        TEXT notes
+        TEXT address
+        TEXT city
+        TEXT country
+        TEXT postalCode
+        TEXT createdAt
+        TEXT updatedAt
+    }
+    social_links {
+        TEXT id PK
+        TEXT contactId FK
+        TEXT platform "instagram|x|linkedin|facebook|tiktok|github|other"
+        TEXT label "name shown when platform = other"
+        TEXT handle
+        TEXT url
+        INTEGER sortOrder
+        TEXT createdAt
+        TEXT updatedAt
+    }
+    custom_fields {
+        TEXT id PK
+        TEXT contactId FK
+        TEXT section "personal|address"
+        TEXT label "NOT NULL"
+        TEXT value
+        INTEGER sortOrder
+        TEXT createdAt
+        TEXT updatedAt
+    }
+    media {
+        TEXT id PK
+        TEXT contactId FK
+        TEXT type "image|video"
+        TEXT url
+        TEXT caption
+        TEXT takenAt
+        TEXT createdAt
+    }
+    timeline_events {
+        TEXT id PK
+        TEXT contactId FK
+        TEXT type
+        TEXT entityType "contact|social|custom_field|media"
+        TEXT entityId
+        TEXT summary
+        TEXT changes "JSON { field: { from, to } }"
+        TEXT occurredAt
+    }
 ```
-GET /contacts
+
+- **contacts**: the core details shown on the Details tab. `firstName` is required. `name` is always built by the API as `firstName + " " + lastName` (used for display, search and sorting), and a `name` sent by the client is ignored.
+- **social_links**: the Socials section. A custom social (Twitch, Etsy, and so on) uses `platform = "other"` plus a `label`.
+- **custom_fields**: user-defined label/value rows added with "+ Add Field" under the Personal or Address section.
+- **timeline_events**: an append-only activity log. The API writes an event in the same transaction as every create, update or delete, so the Timeline tab is `SELECT ... ORDER BY occurredAt DESC`. Updates store a `changes` diff. Event types are `contact_created`, `contact_updated`, `social_added`, `social_updated`, `social_removed`, `field_added`, `field_updated`, `field_removed`, and `media_added` (reserved).
+- **media**: placeholder. The table exists but there are no upload endpoints yet.
+
+All ids are UUID TEXT (the seeded contacts keep ids `01`–`05`). Timestamps are ISO-8601 TEXT. Child rows use `ON DELETE CASCADE`, so deleting a contact removes its socials, fields, media and timeline.
+
+### Planned: users and tagging (not built)
+
+```mermaid
+erDiagram
+    users ||--o{ contacts : owns
+    users |o--o| contacts : "is linked to"
+    users ||--o{ tags : "tagged in"
+
+    users {
+        TEXT id PK
+        TEXT displayName
+        TEXT avatar
+    }
+    contacts {
+        TEXT ownerId FK "who owns the address book"
+        TEXT linkedUserId FK "nullable: this contact is a MemoBook user"
+    }
+    tags {
+        TEXT id PK
+        TEXT userId FK
+        TEXT entityType "media|contact|timeline_event"
+        TEXT entityId
+        TEXT createdAt
+    }
 ```
 
-### Get Single Contact
+These tables are all additive (new tables plus nullable columns), so they can land as a later migration without changing the current tables. `tags` follows the same `entityType` / `entityId` pattern as `timeline_events`. Tagging works at the contact or media level; single detail fields like phone are columns and can't be tagged individually.
 
-```
-GET /contacts/:id
-```
+### Migrations
 
-### Create Contact
+`src/db/migrations.js` keeps the schema version in `PRAGMA user_version` and runs any pending steps from `MIGRATIONS` on startup, each inside a transaction. Add new steps to the end of the list and never edit one that has shipped. v1 upgraded the original single-table database, which is how the Railway DB was migrated. v2 backfills `firstName` from `name` for any contact that had no first name.
 
-```
+## API
+
+All bodies are JSON. Errors return `{ "error": "message" }` with 400 (validation), 404 (not found) or 500.
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/contacts` | All contacts (core fields), sorted by name |
+| GET | `/contacts/:id` | One contact plus `socials[]` and `customFields[]` |
+| POST | `/contacts` | Create (201). `firstName` is required. Optional `socials[]` and `customFields[]` |
+| PUT | `/contacts/:id` | Partial update: only the fields you send change. `name` is rebuilt from first + last |
+| DELETE | `/contacts/:id` | Delete the contact and all its children |
+| POST | `/contacts/:id/socials` | Add a social link (201) |
+| PUT | `/contacts/:id/socials/:socialId` | Update a social link |
+| DELETE | `/contacts/:id/socials/:socialId` | Remove a social link |
+| POST | `/contacts/:id/fields` | Add a custom field (201) |
+| PUT | `/contacts/:id/fields/:fieldId` | Update a custom field |
+| DELETE | `/contacts/:id/fields/:fieldId` | Remove a custom field |
+| GET | `/contacts/:id/timeline` | Timeline events, newest first |
+| GET | `/contacts/:id/media` | Placeholder, always `[]` for now |
+
+Empty strings are stored as `null`.
+
+### Create contact example
+
+```json
 POST /contacts
-Content-Type: application/json
-
 {
-  "id": "string (optional - auto-generated if not provided)",
-  "name": "string (required)",
-  "description": "string",
-  "avatar": "string (URL)",
-  "firstName": "string",
-  "lastName": "string",
-  "otherNames": "string",
-  "relation": "string",
-  "phone": "string",
-  "email": "string",
-  "website": "string",
-  "notes": "string",
-  "address": "string",
-  "city": "string",
-  "country": "string",
-  "postalCode": "string"
+  "firstName": "Priya",
+  "lastName": "Patel",
+  "relation": "Friend",
+  "email": "priya.p@email.com",
+  "socials": [
+    { "platform": "instagram", "handle": "@priyapots", "url": "https://instagram.com/priyapots" },
+    { "platform": "other", "label": "Etsy", "handle": "PriyaPottery" }
+  ],
+  "customFields": [
+    { "section": "personal", "label": "Birthday", "value": "June 2" }
+  ]
 }
 ```
 
-### Update Contact
+The response is the full contact, including `id`, `createdAt`, `updatedAt`, `socials` and `customFields`.
 
-```
-PUT /contacts/:id
-Content-Type: application/json
+Contact fields: `firstName` (required), `lastName`, `description`, `avatar`, `otherNames`, `relation`, `phone`, `email`, `website`, `notes`, `address`, `city`, `country`, `postalCode`.
 
-(same body structure as Create Contact)
-```
+Social: `platform` (required), `label` (required when platform is `other`), `handle` and/or `url`, and optional `sortOrder`.
 
-### Delete Contact
+Custom field: `section` (`personal` | `address`), `label` (required), `value`, and optional `sortOrder`.
 
-```
-DELETE /contacts/:id
-```
+### Timeline event example
 
-## Database
-
-The SQLite database (`contacts.db`) will be automatically created when the server starts for the first time.
-
-### Seeding Sample Data
-
-To populate the database with sample contacts from the frontend:
-
-```bash
-node seed.js
+```json
+{
+  "id": "…",
+  "contactId": "01",
+  "type": "contact_updated",
+  "entityType": "contact",
+  "entityId": "01",
+  "summary": "Phone changed",
+  "changes": { "phone": { "from": "+1 (555) 123-4567", "to": "+1 (555) 000-0000" } },
+  "occurredAt": "2026-09-26T18:00:00.000Z"
+}
 ```
 
-This will clear existing data and insert 5 sample contacts that match those from the frontend mock data.
+## Testing with Postman
 
-## Database Schema
+`postman/memobook-local.postman_collection.json` is a ready-made collection that points at `http://localhost:3000`.
 
-```sql
-CREATE TABLE contacts (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  description TEXT,
-  avatar TEXT,
-  firstName TEXT,
-  lastName TEXT,
-  otherNames TEXT,
-  relation TEXT,
-  phone TEXT,
-  email TEXT,
-  website TEXT,
-  notes TEXT,
-  address TEXT,
-  city TEXT,
-  country TEXT,
-  postalCode TEXT
-)
-```
+1. Start the backend with `npm run dev`.
+2. In the Postman desktop app, choose **Import** and pick the file.
+3. Run the requests top to bottom, or use **Run collection**. "Create contact" saves the new id into `{{contactId}}`, and "Add social" / "Add custom field" save `{{socialId}}` / `{{fieldId}}`, so the later requests reuse them. Each request includes a status-code test.
 
-## Connecting to Frontend
+To target a different port, edit the `baseUrl` variable on the collection. Re-import the file after API changes.
 
-Make sure your frontend makes API calls to `http://localhost:3000`. CORS is already enabled for all origins.
+## Deployment
 
-Example frontend API service:
-
-```typescript
-const API_URL = 'http://localhost:3000';
-
-export const contactService = {
-  async getAll() {
-    const response = await fetch(`${API_URL}/contacts`);
-    return response.json();
-  },
-
-  async getById(id: string) {
-    const response = await fetch(`${API_URL}/contacts/${id}`);
-    return response.json();
-  },
-
-  async create(contact: Contact) {
-    const response = await fetch(`${API_URL}/contacts`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(contact),
-    });
-    return response.json();
-  },
-
-  async update(id: string, contact: Contact) {
-    const response = await fetch(`${API_URL}/contacts/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(contact),
-    });
-    return response.json();
-  },
-
-  async delete(id: string) {
-    const response = await fetch(`${API_URL}/contacts/${id}`, {
-      method: 'DELETE',
-    });
-    return response.json();
-  },
-};
-```
+Railway runs `npm start`, which seeds (only when the DB is empty) and then starts the server. Set `NODE_ENV=production` and `DB_PATH` to a path on a mounted volume so the database survives redeploys.

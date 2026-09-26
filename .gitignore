@@ -34,4 +34,5 @@ dist/
 build/
 
 .claude
-claude.md
+# Test coverage
+coverage/
