@@ -1,16 +1,19 @@
 # MemoBook Backend
 
-Node.js + Express 5 + SQLite backend for MemoBook, a demo contact book. There's no auth: anyone using the demo can add and edit contacts. The mock contacts are only seeded into an empty database.
+Node.js + TypeScript + Express 5 + SQLite backend for MemoBook, a demo contact book. There's no auth: anyone using the demo can add and edit contacts. The mock contacts are only seeded into an empty database.
 
 ## Run locally
 
 ```bash
 npm install
-npm run dev    # seeds an empty DB, then starts nodemon on http://localhost:3000
+npm run dev    # seeds an empty DB, then starts `node --watch` on http://localhost:3000
 npm start      # same without auto-reload (used on Railway)
 npm run seed   # seed only (skips if contacts already exist)
 npm test       # run the test suite
+npm run typecheck   # type check only (tsc, no output files)
 ```
+
+Requires Node 22.18 or newer: Node strips the TypeScript types at runtime, so there is no build step.
 
 The local database is `contacts.db` (gitignored). Delete it to start fresh with the mock data.
 
@@ -29,19 +32,19 @@ Code is grouped by feature. Each feature folder owns its routes, service (databa
 
 ```
 src/
-  server.js              entry point: open DB → migrate → start app
-  app.js                 createApp(db): CORS, JSON, routers, error handler
-  config.js              PORT, ALLOWED_ORIGINS, DB path
+  server.ts              entry point: open DB → migrate → start app
+  app.ts                 createApp(db): CORS, JSON, routers, error handler
+  config.ts              PORT, ALLOWED_ORIGINS, DB path
   db/
-    connection.js        createDb(file): promise wrappers + withTransaction
-    migrations.js        versioned schema (PRAGMA user_version)
-    seed.js / seedData.js   mock contacts for an empty DB
+    connection.ts        createDb(file): promise wrappers + withTransaction
+    migrations.ts        versioned schema (PRAGMA user_version)
+    seed.ts / seedData.ts   mock contacts for an empty DB
   lib/                   HttpError, field helpers, sortOrder
-  contacts/              contacts.routes.js, contacts.service.js, contacts.validation.js
-  socials/               socials.routes.js, socials.service.js, socials.validation.js
-  customFields/          customFields.routes.js, customFields.service.js, customFields.validation.js
-  timeline/              timeline.routes.js, timeline.service.js (logEvent, diff)
-  media/                 media.routes.js (placeholder)
+  contacts/              contacts.routes.ts, contacts.service.ts, contacts.validation.ts
+  socials/               socials.routes.ts, socials.service.ts, socials.validation.ts
+  customFields/          customFields.routes.ts, customFields.service.ts, customFields.validation.ts
+  timeline/              timeline.routes.ts, timeline.service.ts (logEvent, diff)
+  media/                 media.routes.ts (placeholder)
 tests/                   Vitest + supertest, one file per feature (plus db/, lib/)
 ```
 
@@ -168,7 +171,7 @@ These tables are all additive (new tables plus nullable columns), so they can la
 
 ### Migrations
 
-`src/db/migrations.js` keeps the schema version in `PRAGMA user_version` and runs any pending steps from `MIGRATIONS` on startup, each inside a transaction. Add new steps to the end of the list and never edit one that has shipped. v1 upgraded the original single-table database, which is how the Railway DB was migrated. v2 backfills `firstName` from `name` for any contact that had no first name.
+`src/db/migrations.ts` keeps the schema version in `PRAGMA user_version` and runs any pending steps from `MIGRATIONS` on startup, each inside a transaction. Add new steps to the end of the list and never edit one that has shipped. v1 upgraded the original single-table database, which is how the Railway DB was migrated. v2 backfills `firstName` from `name` for any contact that had no first name.
 
 ## API
 

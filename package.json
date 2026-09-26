@@ -2,11 +2,16 @@
   "name": "memobook-backend",
   "version": "1.0.0",
   "description": "",
-  "main": "src/server.js",
+  "type": "module",
+  "main": "src/server.ts",
+  "engines": {
+    "node": ">=22.18"
+  },
   "scripts": {
-    "start": "node src/db/seed.js && node src/server.js",
-    "dev": "node src/db/seed.js && nodemon src/server.js",
-    "seed": "node src/db/seed.js",
+    "start": "node src/db/seed.ts && node src/server.ts",
+    "dev": "node src/db/seed.ts && node --watch src/server.ts",
+    "seed": "node src/db/seed.ts",
+    "typecheck": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
@@ -20,9 +25,13 @@
     "sqlite3": "5.1.7"
   },
   "devDependencies": {
+    "@types/cors": "2.8.19",
+    "@types/express": "5.0.6",
+    "@types/node": "22.20.4",
+    "@types/supertest": "7.2.1",
     "@vitest/coverage-v8": "5.0.2",
-    "nodemon": "3.1.13",
     "supertest": "7.3.0",
+    "typescript": "7.0.2",
     "vitest": "5.0.2"
   }
 }
