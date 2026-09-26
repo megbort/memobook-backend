@@ -1,5 +1,6 @@
 import { HttpError } from '../lib/httpError.ts';
 import { isBlank, isOneOf, type RequestBody } from '../lib/fields.ts';
+import { validateSortOrder } from '../lib/sortOrder.ts';
 
 export const CUSTOM_FIELD_FIELDS = ['section', 'label', 'value', 'sortOrder'] as const;
 export const FIELD_SECTIONS = ['personal', 'address'] as const;
@@ -20,4 +21,5 @@ export const validateCustomField = (field: RequestBody) => {
     throw new HttpError(400, `section must be one of: ${FIELD_SECTIONS.join(', ')}`);
   }
   if (isBlank(field.label)) throw new HttpError(400, 'label is required');
+  validateSortOrder(field.sortOrder);
 };

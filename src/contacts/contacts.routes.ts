@@ -24,7 +24,8 @@ export const contactsRouter = (db: Db) => {
   });
 
   router.delete('/:id', async (req, res) => {
-    res.json({ deleted: await contacts.removeContact(db, req.params.id) });
+    const deleted = await db.withTransaction(() => contacts.removeContact(db, req.params.id));
+    res.json({ deleted });
   });
 
   return router;

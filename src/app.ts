@@ -37,6 +37,10 @@ export const createApp = (
   app.use('/contacts/:id/media', mediaRouter(db));
   app.use('/contacts', contactsRouter(db));
 
+  app.use((req, res) => {
+    res.status(404).json({ error: 'Not found' });
+  });
+
   // Express only treats a middleware as an error handler when it declares all four arguments.
   const handleError: ErrorRequestHandler = (err, req, res, next) => {
     if (err instanceof HttpError) return res.status(err.status).json({ error: err.message });

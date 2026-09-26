@@ -47,6 +47,16 @@ describe('POST /contacts/:id/fields', () => {
     expect(res.body.sortOrder).toBe(5);
   });
 
+  it('stores a blank value as null', async () => {
+    const res = await addField({ section: 'personal', label: 'A', value: '   ' }).expect(201);
+    expect(res.body.value).toBeNull();
+  });
+
+  it('400s for a non-integer sortOrder', async () => {
+    const res = await addField({ section: 'personal', label: 'A', sortOrder: 'abc' }).expect(400);
+    expect(res.body).toEqual({ error: 'sortOrder must be an integer' });
+  });
+
   it('is returned on the contact, grouped by section', async () => {
     await addField({ section: 'personal', label: 'P' });
     await addField({ section: 'address', label: 'A' });
@@ -106,6 +116,13 @@ describe('PUT /contacts/:id/fields/:fieldId', () => {
     const field = (await addField({ section: 'personal', label: 'Tea' })).body;
     await api.put(`/contacts/${contact.id}/fields/${field.id}`).send({ label: '' }).expect(400);
     await api.put(`/contacts/${contact.id}/fields/${field.id}`).send({ section: 'work' }).expect(400);
+    await api.put(`/contacts/${contact.id}/fields/${field.id}`).send({ sortOrder: 1.5 }).expect(400);
+  });
+
+  it('keeps the current sortOrder when sent blank', async () => {
+    const field = (await addField({ section: 'personal', label: 'Tea', sortOrder: 3 })).body;
+    const res = await api.put(`/contacts/${contact.id}/fields/${field.id}`).send({ sortOrder: '' }).expect(200);
+    expect(res.body.sortOrder).toBe(3);
   });
 
   it('accepts a request with no body', async () => {

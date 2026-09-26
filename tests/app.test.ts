@@ -55,7 +55,8 @@ describe('errors', () => {
   it('404s for unknown routes', async () => {
     let api;
     ({ db, api } = await makeTestApp());
-    await api.get('/nothing-here').expect(404);
+    const res = await api.get('/nothing-here').expect(404);
+    expect(res.body).toEqual({ error: 'Not found' });
   });
 
   it('returns 500 with the message and logs unexpected errors', async () => {
