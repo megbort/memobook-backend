@@ -6,7 +6,7 @@ Node.js + TypeScript + Express 5 + SQLite backend for MemoBook, a demo contact b
 
 ```bash
 npm install
-npm run dev    # seeds an empty DB, then starts `node --watch` on http://localhost:3000
+npm run dev    # `node --watch` on http://localhost:3000 (seeds an empty DB on startup)
 npm start      # same without auto-reload (used on Railway)
 npm run seed   # seed only (skips if contacts already exist)
 npm test       # run the test suite
@@ -249,4 +249,4 @@ To target a different port, edit the `baseUrl` variable on the collection. Re-im
 
 ## Deployment
 
-Railway runs `npm start`, which seeds (only when the DB is empty) and then starts the server. Set `NODE_ENV=production` and `DB_PATH` to a path on a mounted volume so the database survives redeploys.
+Railway runs `npm start` (`node src/server.ts`), which migrates, seeds only when the DB is empty, then starts the server. Keep it a single `node` command so the SIGTERM Railway sends on redeploy reaches node (a `&&` chain leaves `sh` in between and npm reports a crash). Set `NODE_ENV=production` and `DB_PATH` to a path on a mounted volume so the database survives redeploys.

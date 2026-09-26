@@ -5,8 +5,8 @@ This file provides guidance to AI coding agents working with code in this reposi
 ## Commands
 
 ```bash
-npm run dev            # seed empty DB, then node --watch src/server.ts
-npm start              # seed empty DB, then node src/server.ts (Railway)
+npm run dev            # node --watch src/server.ts (migrates, seeds an empty DB)
+npm start              # node src/server.ts (migrates, seeds an empty DB; Railway)
 npm run seed           # insert mock contacts if the contacts table is empty
 npm run typecheck      # tsc, type checking only
 npm test               # Vitest, once

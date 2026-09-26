@@ -8,8 +8,8 @@
     "node": ">=22.18"
   },
   "scripts": {
-    "start": "node src/db/seed.ts && node src/server.ts",
-    "dev": "node src/db/seed.ts && node --watch src/server.ts",
+    "start": "node src/server.ts",
+    "dev": "node --watch src/server.ts",
     "seed": "node src/db/seed.ts",
     "typecheck": "tsc",
     "test": "vitest run",
