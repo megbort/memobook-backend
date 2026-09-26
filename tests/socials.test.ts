@@ -43,6 +43,11 @@ describe('POST /contacts/:id/socials', () => {
     expect(res.body.sortOrder).toBe(7);
   });
 
+  it('stores blank optional fields as null', async () => {
+    const res = await addSocial({ platform: 'x', handle: '@a', url: '', label: '  ' }).expect(201);
+    expect(res.body).toMatchObject({ url: null, label: null });
+  });
+
   it('allows a custom "other" platform with a label', async () => {
     const res = await addSocial({ platform: 'other', label: 'Twitch', handle: 'p' }).expect(201);
     expect(res.body.label).toBe('Twitch');
@@ -60,6 +65,7 @@ describe('POST /contacts/:id/socials', () => {
     [{ platform: 'other', handle: 'p' }, 'label is required when platform is "other"'],
     [{ platform: 'x' }, 'handle or url is required'],
     [{ platform: 'x', handle: ' ', url: '' }, 'handle or url is required'],
+    [{ platform: 'x', handle: 'p', sortOrder: 'abc' }, 'sortOrder must be an integer'],
   ])('400s for %o', async (body, message) => {
     const res = await addSocial(body).expect(400);
     expect(res.body.error).toMatch(message);
@@ -104,6 +110,13 @@ describe('PUT /contacts/:id/socials/:socialId', () => {
       .put(`/contacts/${contact.id}/socials/${social.id}`)
       .send({ platform: 'other' })
       .expect(400);
+    await api.put(`/contacts/${contact.id}/socials/${social.id}`).send({ sortOrder: 'abc' }).expect(400);
+  });
+
+  it('keeps the current sortOrder when sent blank', async () => {
+    const social = (await addSocial({ platform: 'x', handle: '@p', sortOrder: 4 })).body;
+    const res = await api.put(`/contacts/${contact.id}/socials/${social.id}`).send({ sortOrder: '' }).expect(200);
+    expect(res.body.sortOrder).toBe(4);
   });
 
   it('accepts a request with no body', async () => {

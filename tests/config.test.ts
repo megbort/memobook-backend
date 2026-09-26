@@ -26,7 +26,7 @@ describe('config', () => {
     vi.stubEnv('PORT', '8080');
     vi.stubEnv('ALLOWED_ORIGINS', 'https://a.com,https://b.com');
     const config = await loadConfig();
-    expect(config.port).toBe('8080');
+    expect(config.port).toBe(8080);
     expect(config.allowedOrigins).toEqual(['https://a.com', 'https://b.com']);
   });
 

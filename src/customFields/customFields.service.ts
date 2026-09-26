@@ -8,7 +8,8 @@ import { CUSTOM_FIELD_FIELDS, validateCustomField, type CustomField } from './cu
 
 // Callers must check the contact exists and wrap writes in db.withTransaction.
 
-export const insertCustomField = async (db: Db, contactId: string, field: RequestBody) => {
+export const insertCustomField = async (db: Db, contactId: string, body: RequestBody) => {
+  const field = pickPresent(body, CUSTOM_FIELD_FIELDS);
   const id = crypto.randomUUID();
   const timestamp = now();
   const sortOrder = field.sortOrder ?? (await nextSortOrder(db, 'custom_fields', contactId));
@@ -39,6 +40,8 @@ export const listCustomFields = (db: Db, contactId: string) =>
 export const updateCustomField = async (db: Db, contactId: string, fieldId: string, body: RequestBody) => {
   const existing = await findCustomField(db, contactId, fieldId);
   const merged = { ...existing, ...pickPresent(body, CUSTOM_FIELD_FIELDS) };
+  // A blank sortOrder keeps the current position rather than hitting the NOT NULL column.
+  merged.sortOrder ??= existing.sortOrder;
   validateCustomField(merged);
   const changes = diff(existing, merged, CUSTOM_FIELD_FIELDS);
   if (changes) {

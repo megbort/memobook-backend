@@ -8,7 +8,8 @@ import { SOCIAL_FIELDS, validateSocial, socialName, type Social } from './social
 
 // Callers must check the contact exists and wrap writes in db.withTransaction.
 
-export const insertSocial = async (db: Db, contactId: string, social: RequestBody) => {
+export const insertSocial = async (db: Db, contactId: string, body: RequestBody) => {
+  const social = pickPresent(body, SOCIAL_FIELDS);
   const id = crypto.randomUUID();
   const timestamp = now();
   const sortOrder = social.sortOrder ?? (await nextSortOrder(db, 'social_links', contactId));
@@ -48,6 +49,8 @@ export const listSocials = (db: Db, contactId: string) =>
 export const updateSocial = async (db: Db, contactId: string, socialId: string, body: RequestBody) => {
   const existing = await findSocial(db, contactId, socialId);
   const merged = { ...existing, ...pickPresent(body, SOCIAL_FIELDS) };
+  // A blank sortOrder keeps the current position rather than hitting the NOT NULL column.
+  merged.sortOrder ??= existing.sortOrder;
   validateSocial(merged);
   const changes = diff(existing, merged, SOCIAL_FIELDS);
   if (changes) {

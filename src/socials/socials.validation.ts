@@ -1,5 +1,6 @@
 import { HttpError } from '../lib/httpError.ts';
 import { isBlank, isOneOf, type RequestBody } from '../lib/fields.ts';
+import { validateSortOrder } from '../lib/sortOrder.ts';
 
 export const SOCIAL_FIELDS = ['platform', 'label', 'handle', 'url', 'sortOrder'] as const;
 export const SOCIAL_PLATFORMS = ['instagram', 'x', 'linkedin', 'facebook', 'tiktok', 'github', 'other'] as const;
@@ -26,6 +27,7 @@ export const validateSocial = (social: RequestBody) => {
   if (isBlank(social.handle) && isBlank(social.url)) {
     throw new HttpError(400, 'handle or url is required');
   }
+  validateSortOrder(social.sortOrder);
 };
 
 export const socialName = (social: { platform?: unknown; label?: unknown }) =>

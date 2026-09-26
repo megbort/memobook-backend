@@ -1,7 +1,7 @@
 import path from 'node:path';
 
 const config = {
-  port: process.env.PORT || 3000,
+  port: Number(process.env.PORT) || 3000,
   allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || [
     'http://localhost:3001',
     'http://localhost:5173',

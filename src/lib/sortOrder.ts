@@ -1,4 +1,5 @@
 import type { Db } from '../db/connection.ts';
+import { HttpError } from './httpError.ts';
 
 export const nextSortOrder = async (db: Db, table: string, contactId: string) => {
   const row = await db.get<{ next: number }>(
@@ -6,4 +7,8 @@ export const nextSortOrder = async (db: Db, table: string, contactId: string) =>
     [contactId],
   );
   return row!.next;
+};
+
+export const validateSortOrder = (value: unknown) => {
+  if (value != null && !Number.isInteger(value)) throw new HttpError(400, 'sortOrder must be an integer');
 };
