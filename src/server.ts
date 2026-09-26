@@ -15,6 +15,7 @@ const start = async () => {
   });
 
   process.once('SIGTERM', () => {
+    console.log('SIGTERM received, shutting down.');
     shutdown(server, db)
       .then(() => process.exit(0))
       .catch((err) => {

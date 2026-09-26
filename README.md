@@ -249,4 +249,4 @@ To target a different port, edit the `baseUrl` variable on the collection. Re-im
 
 ## Deployment
 
-Railway runs `npm start` (`node src/server.ts`), which migrates, seeds only when the DB is empty, then starts the server. Keep it a single `node` command so the SIGTERM Railway sends on redeploy reaches node (a `&&` chain leaves `sh` in between and npm reports a crash). Set `NODE_ENV=production` and `DB_PATH` to a path on a mounted volume so the database survives redeploys.
+Railway runs `node src/server.ts` (set in `railway.json`), which migrates, seeds only when the DB is empty, then starts the server. It skips npm so the SIGTERM Railway sends on redeploy reaches node directly and the server shuts down cleanly; through npm or a shell the stop gets reported as a crash. Set `NODE_ENV=production` and `DB_PATH` to a path on a mounted volume so the database survives redeploys.
