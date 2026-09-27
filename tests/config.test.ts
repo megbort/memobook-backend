@@ -38,4 +38,16 @@ describe('config', () => {
     vi.stubEnv('NODE_ENV', 'production');
     expect((await loadConfig()).dbPath).toBe('/data/contacts.db');
   });
+
+  it('reads Cloudinary credentials, empty when unset', async () => {
+    vi.stubEnv('CLOUDINARY_CLOUD_NAME', undefined);
+    vi.stubEnv('CLOUDINARY_API_KEY', undefined);
+    vi.stubEnv('CLOUDINARY_API_SECRET', undefined);
+    expect((await loadConfig()).cloudinary).toEqual({ cloudName: '', apiKey: '', apiSecret: '' });
+
+    vi.stubEnv('CLOUDINARY_CLOUD_NAME', 'cloud');
+    vi.stubEnv('CLOUDINARY_API_KEY', 'key');
+    vi.stubEnv('CLOUDINARY_API_SECRET', 'secret');
+    expect((await loadConfig()).cloudinary).toEqual({ cloudName: 'cloud', apiKey: 'key', apiSecret: 'secret' });
+  });
 });

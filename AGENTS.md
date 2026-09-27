@@ -5,7 +5,7 @@ This file provides guidance to AI coding agents working with code in this reposi
 ## Commands
 
 ```bash
-npm run dev            # node --watch src/server.ts (migrates, seeds an empty DB)
+npm run dev            # node --watch src/server.ts, loads .env if present (migrates, seeds an empty DB)
 npm start              # node src/server.ts (migrates, seeds an empty DB; Railway)
 npm run seed           # insert mock contacts if the contacts table is empty
 npm run typecheck      # tsc, type checking only
@@ -22,8 +22,8 @@ TypeScript (ES modules) + Express 5 + sqlite3 (no ORM), organized by feature und
 
 - **`db/connection.ts`**: `createDb(file)` returns `{ run, get, all, exec, close, withTransaction }`. These are promise wrappers around one sqlite3 connection. `withTransaction` queues so transactions never overlap.
 - **`db/migrations.ts`**: `migrate(db)` applies pending entries of the append-only `MIGRATIONS` array (tracked in `PRAGMA user_version`), each in a transaction. Never edit a shipped migration; append a new one.
-- **`app.ts`**: `createApp(db, { allowedOrigins, logError })` mounts the routers and the error handler. Express 5 forwards async rejections to that handler. Throw `HttpError(status, message)` (in `lib/httpError.ts`) for 4xx.
-- **Feature folders** (`contacts/`, `socials/`, `customFields/`, `timeline/`, `media/`):
+- **`app.ts`**: `createApp(db, { allowedOrigins, cloudinary, logError })` mounts the routers and the error handler. Express 5 forwards async rejections to that handler. Throw `HttpError(status, message)` (in `lib/httpError.ts`) for 4xx.
+- **Feature folders** (`contacts/`, `socials/`, `customFields/`, `timeline/`, `media/`, `uploads/`):
   - `*.routes.ts` exports `xRouter(db)`; nested ones use `mergeParams` and are mounted at `/contacts/:id/...`.
   - `*.service.ts` holds the DB logic, with functions taking `db` first.
   - `*.validation.ts` holds field whitelists and validators.
@@ -56,6 +56,7 @@ Close the db in `afterEach`.
 - `ALLOWED_ORIGINS` (comma-separated) controls CORS. It defaults to `http://localhost:3001,http://localhost:5173`.
 - `PORT` defaults to 3000.
 - In production (`NODE_ENV=production`), `DB_PATH` sets the database file. Otherwise the database is `contacts.db` in the project root.
+- `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY` and `CLOUDINARY_API_SECRET` enable `POST /contacts/:id/uploads/signature`; without them it returns 503. Tests pass fake credentials through `makeTestApp({ cloudinary })`.
 
 ## Code style
 

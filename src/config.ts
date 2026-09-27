@@ -10,6 +10,11 @@ const config = {
     process.env.NODE_ENV === 'production' && process.env.DB_PATH
       ? process.env.DB_PATH
       : path.resolve(import.meta.dirname, '..', 'contacts.db'),
+  cloudinary: {
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME ?? '',
+    apiKey: process.env.CLOUDINARY_API_KEY ?? '',
+    apiSecret: process.env.CLOUDINARY_API_SECRET ?? '',
+  },
 };
 
 export default config;

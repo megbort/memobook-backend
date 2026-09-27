@@ -622,6 +622,47 @@
             },
             "description": "Always an empty list until media uploads are built."
           }
+        },
+        {
+          "name": "Sign avatar upload",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Returns a signature\", () => pm.expect(pm.response.json().signature).to.be.a(\"string\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kind\": \"avatar\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/contacts/{{contactId}}/uploads/signature",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "contacts",
+                "{{contactId}}",
+                "uploads",
+                "signature"
+              ]
+            },
+            "description": "Signs a direct-to-Cloudinary upload into memobook/contacts/{id}/avatar. Returns 503 unless the CLOUDINARY_* variables are set."
+          }
         }
       ]
     },
