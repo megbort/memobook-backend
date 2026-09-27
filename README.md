@@ -155,7 +155,7 @@ erDiagram
 - **social_links**: the Socials section. A custom social (Twitch, Etsy, and so on) uses `platform = "other"` plus a `label`.
 - **custom_fields**: user-defined label/value rows added with "+ Add Field" under the Personal or Address section.
 - **timeline_events**: an append-only activity log. The API writes an event in the same transaction as every create, update, or social/field delete (deleting a contact removes its timeline along with it), so the Timeline tab is `SELECT ... ORDER BY occurredAt DESC`. Updates store a `changes` diff. Event types are `contact_created`, `contact_updated`, `social_added`, `social_updated`, `social_removed`, `field_added`, `field_updated`, `field_removed`, and `media_added` (reserved).
-- **media**: placeholder. The table exists but there are no upload endpoints yet.
+- **media**: placeholder. The table exists, but saving uploaded media to it isn't built yet (uploads are signed by `POST /contacts/:id/uploads/signature`).
 
 All ids are UUID TEXT (the seeded contacts keep ids `01`–`05`). Timestamps are ISO-8601 TEXT. Child rows use `ON DELETE CASCADE`, so deleting a contact removes its socials, fields, media and timeline.
 
@@ -209,7 +209,7 @@ All bodies are JSON. Errors return `{ "error": "message" }` with 400 (validation
 | PUT | `/contacts/:id/fields/:fieldId` | Update a custom field |
 | DELETE | `/contacts/:id/fields/:fieldId` | Remove a custom field |
 | GET | `/contacts/:id/timeline` | Timeline events, newest first |
-| GET | `/contacts/:id/media` | Lists stored media rows. No upload endpoints yet, so `[]` in practice |
+| GET | `/contacts/:id/media` | Lists stored media rows. Saving uploaded media isn't built yet, so `[]` in practice |
 | POST | `/contacts/:id/uploads/signature` | Signs a direct-to-Cloudinary upload. Body `{ kind: "avatar" \| "media" }`. 503 when Cloudinary isn't configured |
 
 Empty strings are stored as `null`.
