@@ -13,7 +13,7 @@ afterEach(async () => {
 });
 
 describe('GET /contacts/:id/media', () => {
-  it('returns an empty list while uploads are not built', async () => {
+  it('returns an empty list for a contact with no media', async () => {
     const contact = await createContact(api);
     const res = await api.get(`/contacts/${contact.id}/media`).expect(200);
     expect(res.body).toEqual([]);

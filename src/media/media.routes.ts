@@ -2,7 +2,7 @@ import express, { type Request } from 'express';
 import type { Db } from '../db/connection.ts';
 import { findContact } from '../contacts/contacts.service.ts';
 
-// No upload endpoints yet; lists any rows already in the media table.
+// Saving uploaded media isn't built yet; lists any rows already in the media table.
 export const mediaRouter = (db: Db) => {
   const router = express.Router({ mergeParams: true });
 
