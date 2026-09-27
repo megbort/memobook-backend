@@ -9,7 +9,7 @@
   },
   "scripts": {
     "start": "node src/server.ts",
-    "dev": "node --watch src/server.ts",
+    "dev": "node --env-file-if-exists=.env --watch src/server.ts",
     "seed": "node src/db/seed.ts",
     "typecheck": "tsc",
     "test": "vitest run",

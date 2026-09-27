@@ -26,6 +26,23 @@ Then open http://localhost:5173.
 
 CORS allows `http://localhost:3001` and `http://localhost:5173` by default. Set `ALLOWED_ORIGINS` (comma-separated) to override it, which production does.
 
+Image uploads need `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY` and `CLOUDINARY_API_SECRET` (Cloudinary Console → Settings → API Keys). Locally, copy `.env.example` to `.env` and fill them in; `npm run dev` loads it. Without them the signature endpoint returns 503 and everything else still works.
+
+## Uploads (Cloudinary)
+
+The browser uploads files straight to Cloudinary; the backend only signs the request, so the API secret never leaves the server and large videos never pass through it. The backend chooses the folder and public id, so a client can't write anywhere else in the account.
+
+1. `POST /contacts/:id/uploads/signature` with `{ "kind": "avatar" | "media" }` returns `{ uploadUrl, apiKey, signature, params }`.
+2. The client POSTs `file`, every entry of `params`, `api_key` and `signature` as form data to `uploadUrl`.
+3. The client saves the returned `secure_url`: `PUT /contacts/:id { "avatar": url }` for a profile picture.
+
+Assets are grouped per contact:
+
+```
+memobook/contacts/{contactId}/avatar        profile picture, overwritten on every re-upload
+memobook/contacts/{contactId}/media/{uuid}  Media tab images and videos (endpoint to save them not built yet)
+```
+
 ## Project structure
 
 Code is grouped by feature. Each feature folder owns its routes, service (database logic) and validation.
@@ -34,7 +51,7 @@ Code is grouped by feature. Each feature folder owns its routes, service (databa
 src/
   server.ts              entry point: open DB → migrate → start app
   app.ts                 createApp(db): CORS, JSON, routers, error handler
-  config.ts              PORT, ALLOWED_ORIGINS, DB path
+  config.ts              PORT, ALLOWED_ORIGINS, DB path, Cloudinary credentials
   db/
     connection.ts        createDb(file): promise wrappers + withTransaction
     migrations.ts        versioned schema (PRAGMA user_version)
@@ -45,6 +62,7 @@ src/
   customFields/          customFields.routes.ts, customFields.service.ts, customFields.validation.ts
   timeline/              timeline.routes.ts, timeline.service.ts (logEvent, diff)
   media/                 media.routes.ts (placeholder)
+  uploads/               uploads.routes.ts, uploads.service.ts (Cloudinary signatures), uploads.validation.ts
 tests/                   Vitest + supertest, one file per feature (plus db/, lib/)
 ```
 
@@ -192,6 +210,7 @@ All bodies are JSON. Errors return `{ "error": "message" }` with 400 (validation
 | DELETE | `/contacts/:id/fields/:fieldId` | Remove a custom field |
 | GET | `/contacts/:id/timeline` | Timeline events, newest first |
 | GET | `/contacts/:id/media` | Lists stored media rows. No upload endpoints yet, so `[]` in practice |
+| POST | `/contacts/:id/uploads/signature` | Signs a direct-to-Cloudinary upload. Body `{ kind: "avatar" \| "media" }`. 503 when Cloudinary isn't configured |
 
 Empty strings are stored as `null`.
 
@@ -249,4 +268,4 @@ To target a different port, edit the `baseUrl` variable on the collection. Re-im
 
 ## Deployment
 
-Railway runs `node src/server.ts` (set in `railway.json`), which migrates, seeds only when the DB is empty, then starts the server. It skips npm so the SIGTERM Railway sends on redeploy reaches node directly and the server shuts down cleanly; through npm or a shell the stop gets reported as a crash. Set `NODE_ENV=production` and `DB_PATH` to a path on a mounted volume so the database survives redeploys.
+Railway runs `node src/server.ts` (set in `railway.json`), which migrates, seeds only when the DB is empty, then starts the server. It skips npm so the SIGTERM Railway sends on redeploy reaches node directly and the server shuts down cleanly; through npm or a shell the stop gets reported as a crash. Set `NODE_ENV=production` and `DB_PATH` to a path on a mounted volume so the database survives redeploys. Set the three `CLOUDINARY_*` variables to enable uploads.

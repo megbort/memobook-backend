@@ -8,15 +8,22 @@ import { socialsRouter } from './socials/socials.routes.ts';
 import { customFieldsRouter } from './customFields/customFields.routes.ts';
 import { timelineRouter } from './timeline/timeline.routes.ts';
 import { mediaRouter } from './media/media.routes.ts';
+import { uploadsRouter } from './uploads/uploads.routes.ts';
+import type { CloudinaryConfig } from './uploads/uploads.service.ts';
 
 export type AppOptions = {
   allowedOrigins?: string[];
+  cloudinary?: CloudinaryConfig;
   logError?: (err: unknown) => void;
 };
 
 export const createApp = (
   db: Db,
-  { allowedOrigins = config.allowedOrigins, logError = console.error }: AppOptions = {},
+  {
+    allowedOrigins = config.allowedOrigins,
+    cloudinary = config.cloudinary,
+    logError = console.error,
+  }: AppOptions = {},
 ) => {
   const app = express();
   app.disable('x-powered-by');
@@ -35,6 +42,7 @@ export const createApp = (
   app.use('/contacts/:id/fields', customFieldsRouter(db));
   app.use('/contacts/:id/timeline', timelineRouter(db));
   app.use('/contacts/:id/media', mediaRouter(db));
+  app.use('/contacts/:id/uploads', uploadsRouter(db, cloudinary));
   app.use('/contacts', contactsRouter(db));
 
   app.use((req, res) => {
