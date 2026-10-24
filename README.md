@@ -13,7 +13,7 @@ npm test       # run the test suite
 npm run typecheck   # type check only (tsc, no output files)
 ```
 
-Requires Node 22.18 or newer: Node strips the TypeScript types at runtime, so there is no build step.
+Requires Node 24.22.1 or newer (older releases have the Brotli decoder flaw CVE-2026-111497). Node strips the TypeScript types at runtime, so there is no build step.
 
 The local database is `contacts.db` (gitignored). Delete it to start fresh with the mock data.
 
