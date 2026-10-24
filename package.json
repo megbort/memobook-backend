@@ -5,7 +5,7 @@
   "type": "module",
   "main": "src/server.ts",
   "engines": {
-    "node": ">=22.18"
+    "node": ">=24.22.1"
   },
   "scripts": {
     "start": "node src/server.ts",

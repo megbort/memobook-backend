@@ -5,8 +5,12 @@ on:
   push:
     branches: [master]
 
+permissions:
+  contents: read
+
 jobs:
   test:
+    name: typecheck & test
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -14,7 +18,8 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
+          check-latest: true
           cache: npm
 
       - name: Install dependencies
